@@ -9,6 +9,7 @@ abstract type Edge end
 
 # handles == and hash for EVERYTHING that subtypes Fact or Term
 # hash makes stuff like unique() work and == makes '==' work. 
+
 for T in (Fact, Term, Edge)
     @eval begin
         Base.:(==)(a::T, b::T) where {T<:$T} = 
