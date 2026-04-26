@@ -76,7 +76,7 @@ function create_universal_objects(base_edges :: Vector{BaseCatEdge})
 
     state_to_actions_coproduct = Dict{StateFact, Vector{ActionFact}}()
     state_to_actions_product = Dict{StateFact, Vector{ActionFact}}()
-
+    
 
     for edge in base_edges
         push!(get!(state_to_actions_product, edge.source, ActionFact[]), edge.what)
