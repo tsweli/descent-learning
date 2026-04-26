@@ -1,7 +1,7 @@
 module CategoricalStructures
 
 import Base: == 
-export base_cat_edge_eq ,Var, Op, Fact, Term, ActionFact, SpecialFact, StateFact, BaseCatEdge
+export repr_term, repr_fact, base_cat_edge_eq ,Var, Op, Fact, Term, ActionFact, SpecialFact, StateFact, BaseCatEdge
 
 abstract type Fact end
 abstract type Term end
@@ -45,11 +45,9 @@ struct StateFact <: Fact
 end
 
 struct BaseCatEdge <: Edge
-    what :: ActionFact
-    source :: StateFact
-    target :: StateFact
+    what :: ActionFact #real state fact
+    source :: StateFact #product
+    target :: StateFact #coproduct
 end
-
-
 
 end

@@ -76,30 +76,32 @@ function create_universal_objects(base_edges :: Vector{BaseCatEdge})
 
     state_to_actions_coproduct = Dict{StateFact, Vector{ActionFact}}()
     state_to_actions_product = Dict{StateFact, Vector{ActionFact}}()
-    
+
 
     for edge in base_edges
         push!(get!(state_to_actions_product, edge.source, ActionFact[]), edge.what)
         push!(get!(state_to_actions_coproduct, edge.target, ActionFact[]), edge.what)
     end    
     
-    states = collect(keys(state_to_actions_coproduct))
-
-    btmtrx_source = ([   
+    states_coproduct = collect(keys(state_to_actions_coproduct))
+    states_product = collect(keys(state_to_actions_product))
+    
+    btmtrx_source = BitMatrix([   
             i == j ? false : states_eq(state_to_actions_product, i,j)
-            for i in states, j in states
+            for i in states_product, j in states_product
         ])
-    btmtrx_target = ([   
+    btmtrx_target = BitMatrix([   
             i == j ? false : states_eq(state_to_actions_coproduct, i, j)
-            for i in states, j in states
+            for i in states_coproduct, j in states_coproduct
         ])
 
     btmtrx = btmtrx_target .&& btmtrx_source
 
     d, _ = findmaxcardinalitybipartitematching(btmtrx)
     modifier = [k for (k,i) in d if k <= i] #tells me the index of what I should keep from matched
-    to_remove = [states[i] for i in modifier]
+    to_remove = unique(vcat([states_product[i] for i in modifier], [states_coproduct[i] for i in modifier]))
     filter(b -> b.source ∉ to_remove && b.target ∉ to_remove, base_edges)
+
 end
 
 

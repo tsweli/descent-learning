@@ -41,7 +41,7 @@ function Base.show(io::IO, f::T) where T <: Fact
     print(io, "$(f.name)$(_fmt_args(f.data))")
 end
 
-Base.show(io::IO, e::BaseCatEdge) = print(io, "$(e.source) -[$(e.what)]→ $(e.target)")
+Base.show(io::IO, e::BaseCatEdge) = print(io, "$(e.source) ←[s]— ($(e.what)) —[t]→ $(e.target)")
 
 function pretty_print(heading, quivers)
 
