@@ -41,7 +41,24 @@ function Base.show(io::IO, f::T) where T <: Fact
     print(io, "$(f.name)$(_fmt_args(f.data))")
 end
 
-Base.show(io::IO, e::BaseCatEdge) = print(io, "$(e.source) ←[s]— ($(e.what)) —[t]→ $(e.target)")
+function format_categorical(sf::StateFact, op::String)
+    # If no data, just return the name (e.g., "S")
+    isnothing(sf.data) || isempty(sf.data) && return "S()"
+    
+    # Map each variable to "Name(var)"
+    # Example: S(x), S(y)
+    elements = ["$(sf.name)($v)" for v in sf.data]
+    
+    # Join with the requested operator
+    return join(elements, " $op ")
+end
+
+# Your requested BaseCatEdge format
+Base.show(io::IO, e::BaseCatEdge) = print(io, 
+    format_categorical(e.source, "×"), 
+    " ←[s]— (", e.what, ") —[t]→ ", 
+    format_categorical(e.target, "⊔")
+)
 
 function pretty_print(heading, quivers)
 
@@ -58,11 +75,11 @@ function print_graph_to_file(fn, quivers)
         to_graphviz(quivers)
     end)
 
-    open("$fn.png", "w") do io
-        run_graphviz(io, pretty, format="png")
+    open("$fn.pdf", "w") do io
+        run_graphviz(io, pretty, format="pdf")
     end
 
-    println(DIM, "Saved to $fn.png.", RESET, "\n")
+    println(DIM, "Saved to $fn.pdf.", RESET, "\n")
 end
 
 function Catlab.Graphics.to_graphviz(quivers::Vector{BaseCatEdge})
