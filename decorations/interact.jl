@@ -33,6 +33,12 @@ function with_spinner(msg, func)
 end
 
 
+function Base.show(io::IO, v::Vector{StateFact})
+    print(io, "[")
+    join(io, v, ", ")
+    print(io, "]")
+end
+
 Base.show(io::IO, v::Var) = print(io, v.name)
 
 _fmt_args(d) = d === nothing ? "" : "($(join(d, ", ")))"

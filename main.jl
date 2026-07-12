@@ -1,9 +1,8 @@
 include("structures/categorical_structures.jl")
 include("structures/plumbing.jl")
 include("decorations/interact.jl")
-include("structures/msr_translation.jl")
 
-using .Interact, .CategoricalStructures, .CategoricalPlumbing, .MSRTranslation
+using .Interact, .CategoricalStructures, .CategoricalPlumbing
 using Combinatorics
 
 data,fn = get_data()
@@ -17,39 +16,56 @@ print_graph_to_file(fn,universal_base)
 
 #A note on Tamarin convention: ~x for fresh, $x for public, x for bound... although we don't implement this here
 #because we don't actually learn this directly...
-function unwrap(sf::StateFact)
-    (isnothing(sf.data) || isempty(sf.data)) && return ""
-    return join(["$(sf.name)($v)" for v in sf.data], ", ")
-end
 
-function unwrap_target(target::StateFact, action::ActionFact)
-    if isnothing(target.data) || length(target.data) <= 1
-        return unwrap(target)
+
+function process_to_tamarin(dense_quiver::Vector{BaseCatEdge}, logs)
+    # println(logs)
+    subscript(i) = join(Char(0x2080 + d) for d in reverse!(digits(i)))
+    rules_learned = String[]
+    labelled_sates = StateFact[]
+
+    states = unique([a.source for a in dense_quiver])
+    states_out = unique(
+        [
+            StateFact(:S, a.what.data) for a in dense_quiver
+            if a.what.data ⊆ a.target.data
+        ]
+    )
+    union!(states, states_out)
+
+    for (i, s) in enumerate(states)
+        push!(labelled_sates, StateFact(Symbol("\$\\factsymbol{S}_{$i}\$"), s.data))
     end
 
-    relevant_vars = unique(filter(v -> v in action.data, target.data))
-    
-    return join(["$(target.name)($v)" for v in relevant_vars], ", ")
-end
+    function mapsaccordingly(out, in)
+        function comp(x)
+            # println("compare: ", x[1].name, "==", in.name)
+            # println("compare: ", x[1].args , "==", in.data)
+            # println("compare: ", x[2], "==", get(out.data,1, nothing))
+            x[1].name == in.name && all(x[1].args .== in.data) && x[2] == get(out.data,1, nothing)
+        end
+        any(x -> comp(x), logs)
+    end
 
-function process_to_tamarin(dense_quiver::Vector{BaseCatEdge})
-    rules_learned = String[]
-    for (i, arrow) in enumerate(dense_quiver) 
-        lhs = unwrap(arrow.source)
-        action_label = arrow.what.name
-        
-        rhs = unwrap_target(arrow.target, arrow.what)
-        
-        push!(rules_learned, """
-rule Rule_$i:
-  [ $lhs ]
---[ $action_label ]-->
-  [ $rhs ]
-""")
+    for arrow in dense_quiver
+        lhs = filter(x-> x.data == arrow.source.data, labelled_sates)
+        action_label = arrow.what 
+        rhs = filter(x -> mapsaccordingly(x, action_label), labelled_sates)
+        rhsr = filter(x -> length(rhs) == 1 ? true : x.data == action_label.data, rhs)
+        rule = """
+        $lhs
+        -[ $action_label ]->
+        $rhsr
+        """
+        if rule ∉ rules_learned
+            push!(rules_learned, rule)
+        end
+
     end
     return rules_learned
 end
 
-for a in process_to_tamarin(universal_base)
+
+for a in process_to_tamarin(universal_base, logs)
     println(a)
 end
